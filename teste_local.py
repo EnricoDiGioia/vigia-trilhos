@@ -207,7 +207,42 @@ def main() -> int:
     checar(cliente.get(f"/cancelar/{registro['token']}").status_code == 200, "página de cancelamento responde")
 
     # ---------------------------------------------------------------- #
-    print("\n10. Trava entre ciclos")
+    print("\n10. Ocorrência longa atravessando a janela do filtro")
+    from datetime import datetime, timedelta, timezone
+
+    agora_dt = datetime.now(timezone.utc)
+
+    def _iso(d):
+        return d.isoformat(timespec="seconds").replace("+00:00", "Z")
+
+    with dados.conexao() as con:
+        # em curso há 30 h: começou fora da janela de 24 h, mas acontece AGORA
+        con.execute(
+            "INSERT INTO eventos (linha,status,rotulo,descricao,fonte,severidade,inicio,fim,duracao_min) "
+            "VALUES (5,'paralisada','Paralisada','Falha prolongada','proximo_trem',3,?,NULL,NULL)",
+            (_iso(agora_dt - timedelta(hours=30)),),
+        )
+        # encerrada há 49 h: fora da janela dos dois lados
+        con.execute(
+            "INSERT INTO eventos (linha,status,rotulo,descricao,fonte,severidade,inicio,fim,duracao_min) "
+            "VALUES (12,'reduzida','Velocidade Reduzida','antiga','proximo_trem',1,?,?,60)",
+            (_iso(agora_dt - timedelta(hours=50)), _iso(agora_dt - timedelta(hours=49))),
+        )
+
+    em_24h = [i["linha"] for i in dados.ocorrencias(dias=1)["itens"]]
+    checar(5 in em_24h, "ocorrência em curso há 30 h aparece no filtro de 24 h")
+    checar(12 not in em_24h, "ocorrência encerrada há 49 h não aparece no filtro de 24 h")
+
+    longa = next(i for i in dados.ocorrencias(dias=1)["itens"] if i["linha"] == 5)
+    checar(longa["em_curso"], "ela continua marcada como em curso")
+    checar(longa["duracao_min"] > 1700, f"duração viva acompanha o relógio ({longa['duracao_min']:.0f} min)")
+
+    faixas = dados.linha_do_tempo(dias=1)
+    linha5 = next(l for l in faixas["linhas"] if l["linha"] == 5)
+    checar(len(linha5["blocos"]) == 1, "o gráfico de faixas recorta o bloco na janela")
+
+    # ---------------------------------------------------------------- #
+    print("\n11. Trava entre ciclos")
     os.environ["INTERVALO_MINIMO"] = "60"
     servidor.INTERVALO_MINIMO = 60
     servidor.executar_ciclo(forcar=True)

@@ -324,7 +324,10 @@ def ocorrencias(
 
     if dias:
         corte = (datetime.now(timezone.utc) - timedelta(days=dias)).isoformat()
-        condicoes.append("inicio >= ?")
+        # sobreposição com a janela, não data de início: uma ocorrência que começou
+        # antes do recorte e ainda está em curso pertence ao período tanto quanto
+        # uma que começou dentro dele. Mesma regra que linha_do_tempo() usa.
+        condicoes.append("(fim IS NULL OR fim >= ?)")
         valores.append(corte.replace("+00:00", "Z"))
     if linhas:
         marcadores = ",".join("?" * len(linhas))
