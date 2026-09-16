@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vigia dos Trilhos</title>
+<meta name="description" content="Status ao vivo das 15 linhas de metrô e trem de São Paulo, com aviso por linha.">
+<meta name="theme-color" content="#0D6E63">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚇</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+</head>
+<body data-email-ativo="{{ '1' if email_ativo else '0' }}" data-artesp-ativo="{{ '1' if artesp_ativo else '0' }}">
+
+<header class="topo">
+  <div class="faixa topo-linha">
+    <a class="marca" href="/">
+      <span class="marca-glifo" aria-hidden="true"></span>
+      <span class="marca-txt">
+        <span class="marca-nome">Vigia dos Trilhos</span>
+        <span class="marca-sub">Metrô e trem · Região Metropolitana de SP</span>
+      </span>
+    </a>
+    <div class="pulso" id="pulso">
+      <span class="pulso-luz" id="pulso-luz"></span>
+      <span class="pulso-txt" id="pulso-txt">conectando…</span>
+    </div>
+  </div>
+  <nav class="abas faixa" role="tablist">
+    <button class="aba ativa" role="tab" aria-selected="true" aria-controls="painel" id="aba-painel">Painel</button>
+    <button class="aba" role="tab" aria-selected="false" aria-controls="ocorrencias" id="aba-ocorrencias">Ocorrências</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ══════════════════════════ PAINEL ══════════════════════════ -->
+<section id="painel" role="tabpanel" aria-labelledby="aba-painel">
+
+  <div class="manchete-bloco">
+    <div class="faixa">
+      <p class="sobretitulo" id="sobretitulo">carregando</p>
+      <h1 class="manchete" id="manchete">Lendo a rede…</h1>
+      <p class="submanchete" id="submanchete"></p>
+    </div>
+  </div>
+
+  <div class="faixa corpo">
+
+    <section class="bloco">
+      <div class="sec-cabeca">
+        <h2>A rede agora</h2>
+        <div class="legenda">
+          <span class="legenda-item"><i class="amostra s0"></i>normal</span>
+          <span class="legenda-item"><i class="amostra s1"></i>reduzida</span>
+          <span class="legenda-item"><i class="amostra s2"></i>parcial</span>
+          <span class="legenda-item"><i class="amostra s3"></i>paralisada</span>
+        </div>
+      </div>
+      <div class="rede" id="rede" role="list"></div>
+      <p class="rodape-sec" id="dica-rede">Toque numa linha para ver o detalhe e ativar o aviso.</p>
+    </section>
+
+    <section class="bloco" id="bloco-minhas">
+      <div class="sec-cabeca">
+        <h2>Minhas linhas</h2>
+        <button class="elo" id="btn-notificacao">Ativar notificações</button>
+      </div>
+      <div class="cartoes" id="cartoes-minhas"></div>
+    </section>
+
+    <section class="bloco" id="bloco-atencao" hidden>
+      <div class="sec-cabeca"><h2 id="titulo-atencao">Precisa de atenção</h2></div>
+      <div class="cartoes" id="cartoes-atencao"></div>
+    </section>
+
+    <section class="bloco calmaria" id="bloco-calmaria" hidden>
+      <div class="calmaria-caixa">
+        <span class="calmaria-glifo" aria-hidden="true"></span>
+        <div>
+          <h2>Nenhuma ocorrência agora</h2>
+          <p id="calmaria-txt">As 15 linhas estão em operação normal.</p>
+        </div>
+      </div>
+    </section>
+
+    <details class="gaveta-lista" id="todas-lista">
+      <summary><span>Ver as 15 linhas em lista</span></summary>
+      <div class="compacta" id="compacta"></div>
+    </details>
+
+    <section class="cartao-email" id="cartao-email" hidden>
+      <div>
+        <h2>Receber por e-mail</h2>
+        <p>O aviso do navegador só funciona com esta aba aberta. Por e-mail chega de qualquer jeito.</p>
+      </div>
+      <form id="form-email" class="form-email" novalidate>
+        <div class="campo">
+          <label for="email">Seu e-mail</label>
+          <input type="email" id="email" name="email" placeholder="voce@exemplo.com" autocomplete="email" required>
+        </div>
+        <div class="campo">
+          <label for="severidade">Avisar a partir de</label>
+          <select id="severidade" name="severidade">
+            <option value="1" selected>Qualquer mudança</option>
+            <option value="2">Operação parcial ou pior</option>
+            <option value="3">Só paralisação</option>
+          </select>
+        </div>
+        <div class="campo campo-acao">
+          <span class="campo-nota" id="nota-linhas">nenhuma linha escolhida</span>
+          <button type="submit" class="botao primario">Inscrever</button>
+        </div>
+      </form>
+      <p class="retorno" id="retorno-email" hidden></p>
+    </section>
+
+    <p class="aviso-simples" id="aviso-email" hidden>
+      O alerta por e-mail está desligado neste servidor — falta configurar o SMTP.
+      A notificação do navegador funciona com esta aba aberta.
+    </p>
+
+  </div>
+</section>
+
+<!-- ══════════════════════ OCORRÊNCIAS ══════════════════════ -->
+<section id="ocorrencias" role="tabpanel" aria-labelledby="aba-ocorrencias" hidden>
+  <div class="faixa corpo">
+
+    <div class="controles">
+      <div class="segmentado" role="group" aria-label="Período">
+        <button class="seg" data-dias="1">24 h</button>
+        <button class="seg ativa" data-dias="7">7 dias</button>
+        <button class="seg" data-dias="30">30 dias</button>
+      </div>
+      <div class="segmentado" role="group" aria-label="Gravidade">
+        <button class="seg ativa" data-sev="1">Tudo</button>
+        <button class="seg" data-sev="2">Parcial +</button>
+        <button class="seg" data-sev="3">Paralisação</button>
+      </div>
+      <label class="caixa"><input type="checkbox" id="so-seguidas"> só as minhas</label>
+      <button class="botao" id="btn-artesp" hidden title="Consome 1 das 12 requisições/hora da chave">
+        Histórico oficial ARTESP
+      </button>
+    </div>
+
+    <figure class="painel-grafico" id="painel-faixas">
+      <figcaption>
+        <div>
+          <span class="graf-titulo">Quando cada linha esteve fora do normal</span>
+          <span class="graf-nota" id="faixas-nota"></span>
+        </div>
+        <div class="legenda">
+          <span class="legenda-item"><i class="amostra s1 baixa"></i>reduzida</span>
+          <span class="legenda-item"><i class="amostra s2 media"></i>parcial</span>
+          <span class="legenda-item"><i class="amostra s3"></i>paralisada</span>
+        </div>
+      </figcaption>
+      <div class="rolagem"><div class="graf-area" id="faixas-area"></div></div>
+    </figure>
+
+    <figure class="painel-grafico" id="painel-serie">
+      <figcaption>
+        <div>
+          <span class="graf-titulo">Ocorrências por dia</span>
+          <span class="graf-nota" id="serie-nota">últimos 14 dias</span>
+        </div>
+      </figcaption>
+      <div class="graf-area" id="serie-area"></div>
+    </figure>
+
+    <div class="lista-cabeca">
+      <span class="lista-contagem tnum" id="contagem">–</span>
+      <span class="lista-legenda">mais recentes primeiro</span>
+    </div>
+    <div class="lista" id="lista-ocorrencias"></div>
+    <button class="botao mais" id="btn-mais" hidden>Carregar mais</button>
+
+  </div>
+</section>
+
+</main>
+
+<footer class="rodape">
+  <div class="faixa">
+    <p>
+      Dados de <strong>Próximo Trem</strong> (backend do app oficial),
+      <strong>API Trilhos / ARTESP CCM</strong> e da página da <strong>ViaMobilidade</strong>.
+      Projeto independente, sem vínculo com as operadoras.
+    </p>
+    <p class="rodape-diag" id="diagnostico"></p>
+  </div>
+</footer>
+
+<!-- gaveta de detalhe -->
+<div class="gaveta" id="gaveta" hidden>
+  <div class="gaveta-fundo" id="gaveta-fundo"></div>
+  <aside class="gaveta-painel" id="gaveta-painel" role="dialog" aria-modal="true" aria-label="Detalhe da linha"></aside>
+</div>
+
+<div class="brinde" id="brinde" role="status" aria-live="polite" hidden></div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

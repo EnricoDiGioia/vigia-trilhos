@@ -1,0 +1,65 @@
+# Blueprint do Render — referência: https://render.com/docs/blueprint-spec
+#
+# Como usar: no painel do Render, New → Blueprint → aponte para este repositório.
+# Ele lê este arquivo, cria o serviço e pergunta as variáveis marcadas com sync:false.
+#
+# Depois do primeiro deploy, crie um cron externo (cron-job.org é gratuito) batendo em
+#     https://<seu-app>.onrender.com/api/cron/poll?token=<CRON_TOKEN>
+# a cada 5 minutos. É ele que acorda o serviço e executa a coleta na mesma requisição —
+# o plano gratuito derruba o serviço depois de 15 minutos sem tráfego.
+
+services:
+  - name: vigia-trilhos
+    type: web
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    # --workers 1 é de propósito: cada worker rodaria sua própria thread de coleta
+    startCommand: gunicorn --workers 1 --threads 4 --timeout 60 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /api/saude
+
+    envVars:
+      # a thread interna fica desligada; quem dita o ritmo é o cron externo
+      - key: POLL_SEGUNDOS
+        value: "0"
+      # piso entre dois ciclos, para o cron e um refresh manual não martelarem juntos
+      - key: INTERVALO_MINIMO
+        value: "25"
+
+      # o Render gera este valor no primeiro deploy — copie do painel para o cron
+      - key: CRON_TOKEN
+        generateValue: true
+
+      # O disco do plano gratuito é efêmero: este arquivo é zerado a cada deploy,
+      # reinício ou hibernação, e com ele o histórico local e as inscrições de e-mail.
+      # Ao anexar um disco pago, troque por um caminho dentro do ponto de montagem.
+      - key: VIGIA_DB
+        value: /tmp/vigia.db
+
+      # ── preencha no painel ao criar o Blueprint ──────────────────────────────
+      # URL pública do serviço; entra no link de cancelamento dentro do e-mail
+      - key: SITE_URL
+        sync: false
+
+      # Chave do Portal CCM. Pode ficar vazia: o app roda sem ela, só sem o
+      # histórico oficial. Cadastro em ccm.artesp.sp.gov.br/contas/cadastro-solicitacao/
+      # Se preencher, registre o IP de saída do Render na allowlist da credencial.
+      - key: ARTESP_API_KEY
+        sync: false
+      # teto de 12 requisições/hora por credencial — não reduza este intervalo
+      - key: ARTESP_INTERVALO_MIN
+        value: "10"
+
+      # SMTP. Deixe vazio e a interface esconde a inscrição por e-mail sozinha.
+      # No Gmail use uma senha de app, nunca a senha da conta.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USUARIO
+        sync: false
+      - key: SMTP_SENHA
+        sync: false
+      - key: SMTP_DE
+        sync: false

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inscrição cancelada · Vigia dos Trilhos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+</head>
+<body>
+<div class="espectro" aria-hidden="true"></div>
+<main class="faixa pagina-simples">
+  {% if ok %}
+    <h1>Pronto, cancelado</h1>
+    <p>Você não vai mais receber e-mails do Vigia dos Trilhos. Se mudar de ideia, é só se inscrever de novo.</p>
+  {% else %}
+    <h1>Link não encontrado</h1>
+    <p>Esse link de cancelamento não corresponde a nenhuma inscrição ativa — talvez já tenha sido usado.</p>
+  {% endif %}
+  <p><a class="botao primario" href="/">Voltar ao painel</a></p>
+</main>
+</body>
+</html>
